@@ -19,6 +19,7 @@ pub struct AnthropicDriver {
     api_key: Zeroizing<String>,
     base_url: String,
     client: reqwest::Client,
+    extra_headers: Vec<(String, String)>,
 }
 
 impl AnthropicDriver {
@@ -28,7 +29,13 @@ impl AnthropicDriver {
             api_key: Zeroizing::new(api_key),
             base_url,
             client: reqwest::Client::new(),
+            extra_headers: Vec::new(),
         }
+    }
+
+    pub fn with_extra_headers(mut self, headers: Vec<(String, String)>) -> Self {
+        self.extra_headers = headers;
+        self
     }
 }
 
@@ -201,12 +208,16 @@ impl LlmDriver for AnthropicDriver {
             let url = format!("{}/v1/messages", self.base_url);
             debug!(url = %url, attempt, "Sending Anthropic API request");
 
-            let resp = self
+            let mut req_builder = self
                 .client
                 .post(&url)
                 .header("x-api-key", self.api_key.as_str())
                 .header("anthropic-version", "2023-06-01")
-                .header("content-type", "application/json")
+                .header("content-type", "application/json");
+            for (k, v) in &self.extra_headers {
+                req_builder = req_builder.header(k, v);
+            }
+            let resp = req_builder
                 .json(&api_request)
                 .send()
                 .await
@@ -308,12 +319,16 @@ impl LlmDriver for AnthropicDriver {
             let url = format!("{}/v1/messages", self.base_url);
             debug!(url = %url, attempt, "Sending Anthropic streaming request");
 
-            let resp = self
+            let mut req_builder = self
                 .client
                 .post(&url)
                 .header("x-api-key", self.api_key.as_str())
                 .header("anthropic-version", "2023-06-01")
-                .header("content-type", "application/json")
+                .header("content-type", "application/json");
+            for (k, v) in &self.extra_headers {
+                req_builder = req_builder.header(k, v);
+            }
+            let resp = req_builder
                 .json(&api_request)
                 .send()
                 .await

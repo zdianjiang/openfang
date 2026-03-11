@@ -43,6 +43,12 @@ pub const ZHIPU_CODING_BASE_URL: &str = "https://open.bigmodel.cn/api/coding/paa
 pub const ZAI_BASE_URL: &str = "https://api.z.ai/api/paas/v4";
 pub const ZAI_CODING_BASE_URL: &str = "https://api.z.ai/api/coding/paas/v4";
 pub const MOONSHOT_BASE_URL: &str = "https://api.moonshot.cn/v1";
+pub const BAILIAN_CODING_BASE_URL: &str = "https://coding.dashscope.aliyuncs.com/v1";
+pub const BAILIAN_CODING_INTL_BASE_URL: &str = "https://coding-intl.dashscope.aliyuncs.com/v1";
+pub const BAILIAN_CODING_ANTHROPIC_BASE_URL: &str =
+    "https://coding.dashscope.aliyuncs.com/apps/anthropic";
+pub const BAILIAN_CODING_ANTHROPIC_INTL_BASE_URL: &str =
+    "https://coding-intl.dashscope.aliyuncs.com/apps/anthropic";
 pub const QIANFAN_BASE_URL: &str = "https://qianfan.baidubce.com/v2";
 pub const VOLCENGINE_BASE_URL: &str = "https://ark.cn-beijing.volces.com/api/v3";
 pub const VOLCENGINE_CODING_BASE_URL: &str = "https://ark.cn-beijing.volces.com/api/coding/v3";
