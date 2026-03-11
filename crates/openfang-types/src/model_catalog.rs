@@ -42,7 +42,8 @@ pub const ZHIPU_CODING_BASE_URL: &str = "https://open.bigmodel.cn/api/coding/paa
 /// Z.AI domain aliases (same API, different domain).
 pub const ZAI_BASE_URL: &str = "https://api.z.ai/api/paas/v4";
 pub const ZAI_CODING_BASE_URL: &str = "https://api.z.ai/api/coding/paas/v4";
-pub const MOONSHOT_BASE_URL: &str = "https://api.moonshot.cn/v1";
+pub const MOONSHOT_BASE_URL: &str = "https://api.moonshot.ai/v1";
+pub const KIMI_CODING_BASE_URL: &str = "https://api.kimi.com/coding";
 pub const BAILIAN_CODING_BASE_URL: &str = "https://coding.dashscope.aliyuncs.com/v1";
 pub const BAILIAN_CODING_INTL_BASE_URL: &str = "https://coding-intl.dashscope.aliyuncs.com/v1";
 pub const BAILIAN_CODING_ANTHROPIC_BASE_URL: &str =
