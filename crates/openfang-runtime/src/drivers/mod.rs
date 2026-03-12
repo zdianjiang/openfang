@@ -19,9 +19,11 @@ use openfang_types::model_catalog::{
     KIMI_CODING_BASE_URL, LEMONADE_BASE_URL, LMSTUDIO_BASE_URL, MINIMAX_BASE_URL,
     MISTRAL_BASE_URL, MOONSHOT_BASE_URL, OLLAMA_BASE_URL, OPENAI_BASE_URL,
     OPENROUTER_BASE_URL, PERPLEXITY_BASE_URL, QIANFAN_BASE_URL, QWEN_BASE_URL,
-    REPLICATE_BASE_URL, SAMBANOVA_BASE_URL, TOGETHER_BASE_URL, VENICE_BASE_URL, VLLM_BASE_URL,
-    VOLCENGINE_BASE_URL, VOLCENGINE_CODING_BASE_URL, XAI_BASE_URL, ZAI_BASE_URL,
-    ZAI_CODING_BASE_URL, ZHIPU_BASE_URL, ZHIPU_CODING_BASE_URL,
+    REPLICATE_BASE_URL, SAMBANOVA_BASE_URL, TOGETHER_BASE_URL,
+    BAILIAN_CODING_ANTHROPIC_BASE_URL, BAILIAN_CODING_BASE_URL, VENICE_BASE_URL,
+    VLLM_BASE_URL, VOLCENGINE_BASE_URL,
+    VOLCENGINE_CODING_BASE_URL, XAI_BASE_URL, ZAI_BASE_URL, ZAI_CODING_BASE_URL, ZHIPU_BASE_URL,
+    ZHIPU_CODING_BASE_URL,
 };
 use std::sync::Arc;
 
@@ -206,6 +208,11 @@ fn provider_defaults(provider: &str) -> Option<ProviderDefaults> {
             api_key_env: "VOLCENGINE_API_KEY",
             key_required: true,
         }),
+        "bailian_coding" => Some(ProviderDefaults {
+            base_url: BAILIAN_CODING_BASE_URL,
+            api_key_env: "BAILIAN_API_KEY",
+            key_required: true,
+        }),
         "chutes" => Some(ProviderDefaults {
             base_url: CHUTES_BASE_URL,
             api_key_env: "CHUTES_API_KEY",
@@ -342,6 +349,44 @@ pub fn create_driver(config: &DriverConfig) -> Result<Arc<dyn LlmDriver>, LlmErr
         )));
     }
 
+    // Bailian Coding Plan — Anthropic-compatible endpoint.
+    // Requires DashScope-specific headers just like the OpenAI endpoint.
+    // Base URL does NOT include /v1 — AnthropicDriver appends /v1/messages automatically.
+    if provider == "bailian_coding_anthropic" {
+        let api_key = config
+            .api_key
+            .clone()
+            .or_else(|| std::env::var("BAILIAN_API_KEY").ok())
+            .ok_or_else(|| {
+                LlmError::MissingApiKey(
+                    "Set BAILIAN_API_KEY environment variable for Bailian Coding Anthropic"
+                        .to_string(),
+                )
+            })?;
+        let base_url = config
+            .base_url
+            .clone()
+            .unwrap_or_else(|| BAILIAN_CODING_ANTHROPIC_BASE_URL.to_string());
+        let user_agent = format!(
+            "OpenFang/{} ({}; {})",
+            env!("CARGO_PKG_VERSION"),
+            std::env::consts::OS,
+            std::env::consts::ARCH
+        );
+        let dashscope_headers = vec![
+            ("User-Agent".to_string(), user_agent.clone()),
+            ("X-DashScope-UserAgent".to_string(), user_agent),
+            ("X-DashScope-AuthType".to_string(), "qwen-oauth".to_string()),
+            (
+                "X-DashScope-CacheControl".to_string(),
+                "enable".to_string(),
+            ),
+        ];
+        return Ok(Arc::new(
+            anthropic::AnthropicDriver::new(api_key, base_url).with_extra_headers(dashscope_headers),
+        ));
+    }
+
     // Kimi for Code — Anthropic-compatible endpoint
     if provider == "kimi_coding" {
         let api_key = config
@@ -377,6 +422,28 @@ pub fn create_driver(config: &DriverConfig) -> Result<Arc<dyn LlmDriver>, LlmErr
             .base_url
             .clone()
             .unwrap_or_else(|| defaults.base_url.to_string());
+
+        // Bailian Coding Plan (OpenAI endpoint) requires specific headers to identify
+        // the caller as a "Coding Agent"; without them the API returns HTTP 405.
+        if provider == "bailian_coding" {
+            let user_agent = format!(
+                "OpenFang/{} ({}; {})",
+                env!("CARGO_PKG_VERSION"),
+                std::env::consts::OS,
+                std::env::consts::ARCH,
+            );
+            return Ok(Arc::new(
+                openai::OpenAIDriver::new(api_key, base_url).with_extra_headers(vec![
+                    ("User-Agent".to_string(), user_agent.clone()),
+                    ("X-DashScope-UserAgent".to_string(), user_agent),
+                    ("X-DashScope-AuthType".to_string(), "qwen-oauth".to_string()),
+                    (
+                        "X-DashScope-CacheControl".to_string(),
+                        "enable".to_string(),
+                    ),
+                ]),
+            ));
+        }
 
         return Ok(Arc::new(openai::OpenAIDriver::new(api_key, base_url)));
     }
@@ -421,7 +488,7 @@ pub fn create_driver(config: &DriverConfig) -> Result<Arc<dyn LlmDriver>, LlmErr
             "Unknown provider '{}'. Supported: anthropic, gemini, openai, groq, openrouter, \
              deepseek, together, mistral, fireworks, ollama, vllm, lmstudio, perplexity, \
              cohere, ai21, cerebras, sambanova, huggingface, xai, replicate, github-copilot, \
-             chutes, venice, codex, claude-code. Or set base_url for a custom OpenAI-compatible endpoint.",
+             chutes, venice, bailian_coding, bailian_coding_anthropic, codex, claude-code. Or set base_url for a custom OpenAI-compatible endpoint.",
             provider
         ),
     })
@@ -492,6 +559,8 @@ pub fn known_providers() -> &'static [&'static str] {
         "kimi_coding",
         "qianfan",
         "volcengine",
+        "bailian_coding",
+        "bailian_coding_anthropic",
         "chutes",
         "venice",
         "codex",
@@ -595,11 +664,13 @@ mod tests {
         assert!(providers.contains(&"kimi_coding"));
         assert!(providers.contains(&"qianfan"));
         assert!(providers.contains(&"volcengine"));
+        assert!(providers.contains(&"bailian_coding"));
+        assert!(providers.contains(&"bailian_coding_anthropic"));
         assert!(providers.contains(&"chutes"));
         assert!(providers.contains(&"codex"));
         assert!(providers.contains(&"claude-code"));
         assert!(providers.contains(&"qwen-code"));
-        assert_eq!(providers.len(), 35);
+        assert_eq!(providers.len(), 37);
     }
 
     #[test]

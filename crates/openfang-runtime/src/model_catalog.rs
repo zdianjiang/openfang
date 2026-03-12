@@ -5,14 +5,14 @@
 
 use openfang_types::model_catalog::{
     AuthStatus, ModelCatalogEntry, ModelTier, ProviderInfo, AI21_BASE_URL, ANTHROPIC_BASE_URL,
-    BEDROCK_BASE_URL, CEREBRAS_BASE_URL, CHUTES_BASE_URL, COHERE_BASE_URL, DEEPSEEK_BASE_URL,
-    FIREWORKS_BASE_URL, GEMINI_BASE_URL, GITHUB_COPILOT_BASE_URL, GROQ_BASE_URL,
-    HUGGINGFACE_BASE_URL, KIMI_CODING_BASE_URL, LEMONADE_BASE_URL, LMSTUDIO_BASE_URL,
-    MINIMAX_BASE_URL, MISTRAL_BASE_URL, MOONSHOT_BASE_URL, OLLAMA_BASE_URL, OPENAI_BASE_URL,
-    OPENROUTER_BASE_URL, PERPLEXITY_BASE_URL, QIANFAN_BASE_URL, QWEN_BASE_URL,
-    REPLICATE_BASE_URL, SAMBANOVA_BASE_URL, TOGETHER_BASE_URL, VENICE_BASE_URL, VLLM_BASE_URL,
-    VOLCENGINE_BASE_URL, VOLCENGINE_CODING_BASE_URL, XAI_BASE_URL, ZAI_BASE_URL,
-    ZAI_CODING_BASE_URL, ZHIPU_BASE_URL, ZHIPU_CODING_BASE_URL,
+    BAILIAN_CODING_ANTHROPIC_BASE_URL, BAILIAN_CODING_BASE_URL, BEDROCK_BASE_URL,
+    CEREBRAS_BASE_URL, CHUTES_BASE_URL, COHERE_BASE_URL, DEEPSEEK_BASE_URL, FIREWORKS_BASE_URL,
+    GEMINI_BASE_URL, GITHUB_COPILOT_BASE_URL, GROQ_BASE_URL, HUGGINGFACE_BASE_URL,
+    KIMI_CODING_BASE_URL, LEMONADE_BASE_URL, LMSTUDIO_BASE_URL, MINIMAX_BASE_URL, MISTRAL_BASE_URL,
+    MOONSHOT_BASE_URL, OLLAMA_BASE_URL, OPENAI_BASE_URL, OPENROUTER_BASE_URL, PERPLEXITY_BASE_URL,
+    QIANFAN_BASE_URL, QWEN_BASE_URL, REPLICATE_BASE_URL, SAMBANOVA_BASE_URL, TOGETHER_BASE_URL,
+    VENICE_BASE_URL, VLLM_BASE_URL, VOLCENGINE_BASE_URL, VOLCENGINE_CODING_BASE_URL, XAI_BASE_URL,
+    ZAI_BASE_URL, ZAI_CODING_BASE_URL, ZHIPU_BASE_URL, ZHIPU_CODING_BASE_URL,
 };
 use std::collections::HashMap;
 
@@ -59,21 +59,19 @@ impl ModelCatalog {
             // Claude Code is special: no API key needed, but we probe for CLI
             // installation so the dashboard shows "Configured" vs "Not Installed".
             if provider.id == "claude-code" {
-                provider.auth_status =
-                    if crate::drivers::claude_code::claude_code_available() {
-                        AuthStatus::Configured
-                    } else {
-                        AuthStatus::Missing
-                    };
+                provider.auth_status = if crate::drivers::claude_code::claude_code_available() {
+                    AuthStatus::Configured
+                } else {
+                    AuthStatus::Missing
+                };
                 continue;
             }
             if provider.id == "qwen-code" {
-                provider.auth_status =
-                    if crate::drivers::qwen_code::qwen_code_available() {
-                        AuthStatus::Configured
-                    } else {
-                        AuthStatus::Missing
-                    };
+                provider.auth_status = if crate::drivers::qwen_code::qwen_code_available() {
+                    AuthStatus::Configured
+                } else {
+                    AuthStatus::Missing
+                };
                 continue;
             }
 
@@ -89,8 +87,7 @@ impl ModelCatalog {
             let has_fallback = match provider.id.as_str() {
                 "gemini" => std::env::var("GOOGLE_API_KEY").is_ok(),
                 "codex" => {
-                    std::env::var("OPENAI_API_KEY").is_ok()
-                        || read_codex_credential().is_some()
+                    std::env::var("OPENAI_API_KEY").is_ok() || read_codex_credential().is_some()
                 }
                 // claude-code is handled above (before key_required check)
                 _ => false,
@@ -730,6 +727,25 @@ fn builtin_providers() -> Vec<ProviderInfo> {
             display_name: "Volcano Engine Coding Plan".into(),
             api_key_env: "VOLCENGINE_API_KEY".into(),
             base_url: VOLCENGINE_CODING_BASE_URL.into(),
+            key_required: true,
+            auth_status: AuthStatus::Missing,
+            model_count: 0,
+        },
+        // ── Bailian Coding Plan ───────────────────────────────────
+        ProviderInfo {
+            id: "bailian_coding".into(),
+            display_name: "Bailian Coding Plan".into(),
+            api_key_env: "BAILIAN_API_KEY".into(),
+            base_url: BAILIAN_CODING_BASE_URL.into(),
+            key_required: true,
+            auth_status: AuthStatus::Missing,
+            model_count: 0,
+        },
+        ProviderInfo {
+            id: "bailian_coding_anthropic".into(),
+            display_name: "Bailian Coding Plan (Anthropic)".into(),
+            api_key_env: "BAILIAN_API_KEY".into(),
+            base_url: BAILIAN_CODING_ANTHROPIC_BASE_URL.into(),
             key_required: true,
             auth_status: AuthStatus::Missing,
             model_count: 0,
@@ -3616,6 +3632,236 @@ fn builtin_models() -> Vec<ModelCatalogEntry> {
             supports_streaming: true,
             aliases: vec![],
         },
+        // ══════════════════════════════════════════════════════════════
+        // Bailian Coding Plan (8)
+        // ══════════════════════════════════════════════════════════════
+        ModelCatalogEntry {
+            id: "bailian_coding/kimi-k2.5".into(),
+            display_name: "Kimi K2.5 (Bailian Coding)".into(),
+            provider: "bailian_coding".into(),
+            tier: ModelTier::Frontier,
+            context_window: 262_144,
+            max_output_tokens: 32_768,
+            input_cost_per_m: 2.00,
+            output_cost_per_m: 8.00,
+            supports_tools: true,
+            supports_vision: true,
+            supports_streaming: true,
+            aliases: vec!["bailian-kimi".into()],
+        },
+        ModelCatalogEntry {
+            id: "bailian_coding/qwen3.5-plus".into(),
+            display_name: "Qwen 3.5 Plus (Bailian Coding)".into(),
+            provider: "bailian_coding".into(),
+            tier: ModelTier::Smart,
+            context_window: 1_000_000,
+            max_output_tokens: 65_536,
+            input_cost_per_m: 1.00,
+            output_cost_per_m: 4.00,
+            supports_tools: true,
+            supports_vision: true,
+            supports_streaming: true,
+            aliases: vec!["bailian-qwen".into()],
+        },
+        ModelCatalogEntry {
+            id: "bailian_coding/qwen3-max-2026-01-23".into(),
+            display_name: "Qwen3 Max 2026-01-23 (Bailian Coding)".into(),
+            provider: "bailian_coding".into(),
+            tier: ModelTier::Smart,
+            context_window: 262_144,
+            max_output_tokens: 32_768,
+            input_cost_per_m: 1.00,
+            output_cost_per_m: 4.00,
+            supports_tools: true,
+            supports_vision: false,
+            supports_streaming: true,
+            aliases: vec!["bailian-qwen3-max".into()],
+        },
+        ModelCatalogEntry {
+            id: "bailian_coding/qwen3-coder-next".into(),
+            display_name: "Qwen3 Coder Next (Bailian Coding)".into(),
+            provider: "bailian_coding".into(),
+            tier: ModelTier::Smart,
+            context_window: 262_144,
+            max_output_tokens: 65_536,
+            input_cost_per_m: 1.00,
+            output_cost_per_m: 4.00,
+            supports_tools: true,
+            supports_vision: false,
+            supports_streaming: true,
+            aliases: vec!["bailian-coder-next".into()],
+        },
+        ModelCatalogEntry {
+            id: "bailian_coding/qwen3-coder-plus".into(),
+            display_name: "Qwen3 Coder Plus (Bailian Coding)".into(),
+            provider: "bailian_coding".into(),
+            tier: ModelTier::Smart,
+            context_window: 1_000_000,
+            max_output_tokens: 65_536,
+            input_cost_per_m: 1.00,
+            output_cost_per_m: 4.00,
+            supports_tools: true,
+            supports_vision: false,
+            supports_streaming: true,
+            aliases: vec!["bailian-coder".into()],
+        },
+        ModelCatalogEntry {
+            id: "bailian_coding/MiniMax-M2.5".into(),
+            display_name: "MiniMax M2.5 (Bailian Coding)".into(),
+            provider: "bailian_coding".into(),
+            tier: ModelTier::Smart,
+            context_window: 196_608,
+            max_output_tokens: 24_576,
+            input_cost_per_m: 1.00,
+            output_cost_per_m: 4.00,
+            supports_tools: true,
+            supports_vision: false,
+            supports_streaming: true,
+            aliases: vec!["bailian-minimax".into()],
+        },
+        ModelCatalogEntry {
+            id: "bailian_coding/glm-5".into(),
+            display_name: "GLM-5 (Bailian Coding)".into(),
+            provider: "bailian_coding".into(),
+            tier: ModelTier::Smart,
+            context_window: 202_752,
+            max_output_tokens: 16_384,
+            input_cost_per_m: 1.50,
+            output_cost_per_m: 6.00,
+            supports_tools: true,
+            supports_vision: false,
+            supports_streaming: true,
+            aliases: vec!["bailian-glm".into()],
+        },
+        ModelCatalogEntry {
+            id: "bailian_coding/glm-4.7".into(),
+            display_name: "GLM-4.7 (Bailian Coding)".into(),
+            provider: "bailian_coding".into(),
+            tier: ModelTier::Smart,
+            context_window: 202_752,
+            max_output_tokens: 16_384,
+            input_cost_per_m: 1.00,
+            output_cost_per_m: 4.00,
+            supports_tools: true,
+            supports_vision: false,
+            supports_streaming: true,
+            aliases: vec!["bailian-glm4".into()],
+        },
+        // ══════════════════════════════════════════════════════════════
+        // Bailian Coding Plan — Anthropic Protocol (8)
+        // ══════════════════════════════════════════════════════════════
+        ModelCatalogEntry {
+            id: "bailian_coding_anthropic/kimi-k2.5".into(),
+            display_name: "Kimi K2.5 (Bailian Anthropic)".into(),
+            provider: "bailian_coding_anthropic".into(),
+            tier: ModelTier::Frontier,
+            context_window: 262_144,
+            max_output_tokens: 32_768,
+            input_cost_per_m: 2.00,
+            output_cost_per_m: 8.00,
+            supports_tools: true,
+            supports_vision: true,
+            supports_streaming: true,
+            aliases: vec![],
+        },
+        ModelCatalogEntry {
+            id: "bailian_coding_anthropic/qwen3.5-plus".into(),
+            display_name: "Qwen 3.5 Plus (Bailian Anthropic)".into(),
+            provider: "bailian_coding_anthropic".into(),
+            tier: ModelTier::Smart,
+            context_window: 1_000_000,
+            max_output_tokens: 65_536,
+            input_cost_per_m: 1.00,
+            output_cost_per_m: 4.00,
+            supports_tools: true,
+            supports_vision: true,
+            supports_streaming: true,
+            aliases: vec![],
+        },
+        ModelCatalogEntry {
+            id: "bailian_coding_anthropic/qwen3-max-2026-01-23".into(),
+            display_name: "Qwen3 Max 2026-01-23 (Bailian Anthropic)".into(),
+            provider: "bailian_coding_anthropic".into(),
+            tier: ModelTier::Smart,
+            context_window: 262_144,
+            max_output_tokens: 32_768,
+            input_cost_per_m: 1.00,
+            output_cost_per_m: 4.00,
+            supports_tools: true,
+            supports_vision: false,
+            supports_streaming: true,
+            aliases: vec![],
+        },
+        ModelCatalogEntry {
+            id: "bailian_coding_anthropic/qwen3-coder-next".into(),
+            display_name: "Qwen3 Coder Next (Bailian Anthropic)".into(),
+            provider: "bailian_coding_anthropic".into(),
+            tier: ModelTier::Smart,
+            context_window: 262_144,
+            max_output_tokens: 65_536,
+            input_cost_per_m: 1.00,
+            output_cost_per_m: 4.00,
+            supports_tools: true,
+            supports_vision: false,
+            supports_streaming: true,
+            aliases: vec![],
+        },
+        ModelCatalogEntry {
+            id: "bailian_coding_anthropic/qwen3-coder-plus".into(),
+            display_name: "Qwen3 Coder Plus (Bailian Anthropic)".into(),
+            provider: "bailian_coding_anthropic".into(),
+            tier: ModelTier::Smart,
+            context_window: 1_000_000,
+            max_output_tokens: 65_536,
+            input_cost_per_m: 1.00,
+            output_cost_per_m: 4.00,
+            supports_tools: true,
+            supports_vision: false,
+            supports_streaming: true,
+            aliases: vec![],
+        },
+        ModelCatalogEntry {
+            id: "bailian_coding_anthropic/MiniMax-M2.5".into(),
+            display_name: "MiniMax M2.5 (Bailian Anthropic)".into(),
+            provider: "bailian_coding_anthropic".into(),
+            tier: ModelTier::Smart,
+            context_window: 196_608,
+            max_output_tokens: 24_576,
+            input_cost_per_m: 1.00,
+            output_cost_per_m: 4.00,
+            supports_tools: true,
+            supports_vision: false,
+            supports_streaming: true,
+            aliases: vec![],
+        },
+        ModelCatalogEntry {
+            id: "bailian_coding_anthropic/glm-5".into(),
+            display_name: "GLM-5 (Bailian Anthropic)".into(),
+            provider: "bailian_coding_anthropic".into(),
+            tier: ModelTier::Smart,
+            context_window: 202_752,
+            max_output_tokens: 16_384,
+            input_cost_per_m: 1.50,
+            output_cost_per_m: 6.00,
+            supports_tools: true,
+            supports_vision: false,
+            supports_streaming: true,
+            aliases: vec![],
+        },
+        ModelCatalogEntry {
+            id: "bailian_coding_anthropic/glm-4.7".into(),
+            display_name: "GLM-4.7 (Bailian Anthropic)".into(),
+            provider: "bailian_coding_anthropic".into(),
+            tier: ModelTier::Smart,
+            context_window: 202_752,
+            max_output_tokens: 16_384,
+            input_cost_per_m: 1.00,
+            output_cost_per_m: 4.00,
+            supports_tools: true,
+            supports_vision: false,
+            supports_streaming: true,
+            aliases: vec![],
+        },
     ]
 }
 
@@ -3632,7 +3878,7 @@ mod tests {
     #[test]
     fn test_catalog_has_providers() {
         let catalog = ModelCatalog::new();
-        assert_eq!(catalog.list_providers().len(), 39);
+        assert_eq!(catalog.list_providers().len(), 41);
     }
 
     #[test]
@@ -3667,10 +3913,7 @@ mod tests {
     #[test]
     fn test_resolve_alias() {
         let catalog = ModelCatalog::new();
-        assert_eq!(
-            catalog.resolve_alias("sonnet"),
-            Some("claude-sonnet-4-6")
-        );
+        assert_eq!(catalog.resolve_alias("sonnet"), Some("claude-sonnet-4-6"));
         assert_eq!(
             catalog.resolve_alias("haiku"),
             Some("claude-haiku-4-5-20251001")
